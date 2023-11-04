@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -8,13 +9,13 @@ import (
 
 func handler(w http.ResponseWriter, r *http.Request) {
 
-	// use Context from http.Request struct
-	ctx := r.Context()
+	// Set a 2 seconds timeout for every request
+	// if the request is handled within 2 seconds, return "Hello world!"
+	// else send the timeout signal and return a timeout error
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
 
 	select {
-	// set a timeout of 3 seconds
-	// if the request is handled within 3 seconds, return "Hello, World!"
-	// else return an error
 	case <-time.After(3 * time.Second):
 		fmt.Fprintln(w, "Hello, World!")
 	case <-ctx.Done():
