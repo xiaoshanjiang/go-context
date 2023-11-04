@@ -19,21 +19,33 @@ func main() {
 
 	defer db.Close()
 
-	// Set a 2 seconds timeout for database query
-	// if the query takes more than 2 seconds to run,
-	// it will receieve a cancellation signal from the context and interupt the db query
+	tx, err := db.Begin()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, "SELECT * FROM users")
+	go func() {
+		<-ctx.Done()
 
+		fmt.Println("Received cancellation signal, rolling back transaction...")
+
+		tx.Rollback()
+
+	}()
+
+	// execute long running transactions
+	time.Sleep(3 * time.Second)
+
+	err = tx.Commit()
 	if err != nil {
-		fmt.Println("Error when querying: ", err)
+		fmt.Println("Error when committing transaction: ", err)
 		return
 	}
 
-	defer rows.Close()
-
-	// handle the query result
+	fmt.Println("Transaction committed successfully.")
 }
