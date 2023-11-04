@@ -1,14 +1,30 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"net/http"
+	"time"
 )
 
-type key string
+func handler(w http.ResponseWriter, r *http.Request) {
+
+	// use Context from http.Request struct
+	ctx := r.Context()
+
+	select {
+	// set a timeout of 3 seconds
+	// if the request is handled within 3 seconds, return "Hello, World!"
+	// else return an error
+	case <-time.After(3 * time.Second):
+		fmt.Fprintln(w, "Hello, World!")
+	case <-ctx.Done():
+		err := ctx.Err()
+		fmt.Println("Handling request: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
 func main() {
-	ctx := context.WithValue(context.Background(), key("name"), "Alice")
-	value := ctx.Value(key("name"))
-	fmt.Println("Name:", value)
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
 }
